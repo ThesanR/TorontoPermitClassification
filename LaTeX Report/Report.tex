@@ -1,0 +1,261 @@
+\documentclass{article}
+
+
+\usepackage{PRIMEarxiv}
+
+\usepackage[utf8]{inputenc} % allow utf-8 input
+\usepackage[T1]{fontenc}    % use 8-bit T1 fonts
+\usepackage{hyperref}       % hyperlinks
+\usepackage{url}            % simple URL typesetting
+\usepackage{booktabs}       % professional-quality tables
+\usepackage{amsfonts}       % blackboard math symbols
+\usepackage{nicefrac}       % compact symbols for 1/2, etc.
+\usepackage{microtype}      % microtypography
+\usepackage{lipsum}
+\usepackage{fancyhdr}       % header
+\usepackage{graphicx}       % graphics
+\graphicspath{{media/}}     % organize your images and other figures under media/ folder
+
+%Header
+\pagestyle{fancy}
+\thispagestyle{empty}
+\rhead{ \textit{ }} 
+
+% Update your Headers here
+\fancyhead[LO]{ML Binary Classification of Toronto Building Permits}
+% \fancyhead[RE]{Firstauthor and Secondauthor} % Firstauthor et al. if more than 2 - must use \documentclass[twoside]{article}
+
+
+
+  
+%% Title
+\title{ML Binary Classification of Toronto Building Permits
+%%%% Cite as
+%%%% Update your official citation here when published 
+% \thanks{\textit{\underline{Citation}}: 
+% \textbf{T. Ramanan. Title. Pages.... DOI:000000/11111.}} 
+}
+
+\author{
+  Thesan Ramanan \\
+  MASc Student \\
+  Toronto Metropolitan University \\
+  Toronto, Ontario, Canada\\
+  thesan.ramanan@torontomu.ca \\ 
+}
+
+\begin{document}
+\maketitle
+\begin{abstract}
+The uncertainty posed by process time affects many applicants that submit building permit documents to their municipalities. Subsequent decisions in the construction process such as scheduling, contracting, re-assigning tenants, payments, and more are reliant on when a permit is issued. Thus, from open data provided by the City of Toronto, this ML pipeline analyzes and predicts whether an application will take more or less time to process when compared to a particular threshold number of days. The data was cleaned, transformed, and then reshaped into 3 datasets for short, medium and long term projects. Each dataset was modeled separately and yielded moderate capabilities to predict the outcome of new permit entries using the CatBoost Classifier (Binary Classification). To produce more accurate predictions, likely more input data regarding permit stages and roadblocks within the permit process is required. 
+\end{abstract}
+
+
+% keywords can be removed
+\keywords{Machine Learning \and Binary Classification \and PyCaret \and Building Permits \and Toronto}
+
+
+\section{Introduction}
+This report is meant as a companion to the ML classification pipeline provided for the Toronto Metropolitan University course EE8603 - Selected Topics in Computer Engineering, and will cover the intentions behind the research, brief literature review, methodologies to achieve classification, experimental results and discussion for follow-up studies or improvements. 
+
+The motivation for this research was to better prepare architecture and engineering design practitioners with data regarding expected permit times, which they can then confide with their clients as reassurance and for planning in construction. 
+
+To procure a sufficiently populated dataset, the City of Toronto open data consistented of several archives of csv files for cleared and active permits from 2001 to the current day. The concatenation of these csv files were used as the input dataset. Certain features or characteristics related to the application such as application year, permit type, structure type, proposed work done, and estimated construction cost were selected to estimate the process time from application submission to the city, to the issuance of the permit. As such, only closed applications were used, which formed the bulk of the dataset, and not canceled permits. Additionally, the active permit dataset was imported to predict process time using the generated models. 
+
+\newpage
+\section{Brief Literature Review}
+No academic paper was found to use the same dataset and methodology from the City of Toronto, but related alternative sources have been provided below, as well as brief description of their findings:
+
+\subsection{Explainable artificial intelligence for building energy performance certificate labeling classification}
+\url{https://www.sciencedirect.com/science/article/abs/pii/S0959652622012422}
+
+Building energy performance certificates can be estimated from 14 input features with 93 percent accuracy for case study 1. Case study 2 had an accuracy of 89 percent with 26 input features. Those results were classified using an artificial neural network.
+
+\subsection{Development and Construction Application Processing Times}
+\url{https://www.edmonton.ca/business_economy/processing-times#stack79927}
+
+Application Processing times were made visible to establish predictable, transparent service levels for the City of Edmonton. Different times are shown for Residential, Commercial, Industrial, Zoning, and Land Development applications. Additionally, times for target processing time and actual processing time are shown in parallel.
+
+\subsection{Exploring Toronto cleared building permits data}
+\url{https://medium.com/open-data-toronto/exploring-cleared-building-permits-data-8372a2b225d4}
+
+The Toronto cleared building permits dataset was used to analyze permit type distributions over time, inspection length over time, review period over time, and general development. Cleaning, Reshaping, and Transforming was done on the dataset to visualize the data. Outliers were analyzed as well as the bulk of the data.
+
+
+\section{Methodology}
+\label{sec:headings}
+
+\subsection{Feature Engineering}
+To ensure proper organization of files and to facilitate public use, a Github repository was created and all relevant csv files were downloaded in the event the Toronto open data website was unavailable. However, the current pipeline imported directly from the City of Toronto website. Within the repository a python notebook file was used for coding the ML pipeline in Colab. Prior to importing the data and further analysis, features were selected or excluded to better tune the modeling process. 
+
+The following source columns were used in preparing the data: 
+\begin{itemize}
+    \item Permit number (Categorical)
+    \item Permit Type (Categorical)
+    \item Structure Type (Categorical)
+    \item Work (Categorical)
+    \item Application date (Numerical)
+    \item Issued Date (Numerical)
+    \item Estimated Construction Cost (Numerical)
+\end{itemize}
+
+After transforming the data, the following columns were used in the model: 
+\begin{itemize}
+    \item Application year (Numerical)
+    \item Permit Type (Categorical)
+    \item Structure Type (Categorical)
+    \item Work (Categorical)
+    \item Estimated Construction Cost (Numerical)
+    \item Target variable - Process time (Numerical)
+\end{itemize}
+
+\newpage
+The following columns were dropped: 
+\begin{itemize}
+    \item ID (Unnecessary index)
+    \item Permit Number (Another form of ID unnecessary for classification as each permit has a unique number)
+    \item Revision number (Only considering revision 0s as they are the vast majority)
+    \item Street Number, Street Name, Street Type, Street Direction (Area not shown to have effect on data)
+    \item Postal Code (Area not shown to have effect on data)
+    \item GEOID (Area not shown to have effect on data)
+    \item Ward Grid (Area not shown to have effect on data)
+    \item Completed Date (Administrative side completion, not reflective of applicant receiving the permit)
+    \item Status (Only choosing closed applications which are the vast majority in the dataset)
+    \item Description (Too specific, applicant is free to type which makes it difficult to categorize)
+    \item Current and Proposed Use (Too many missing entries)
+    \item Dwelling Units created or lost (Too many missing entries)
+    \item Other columns from 24-32 (Too many missing entries)
+\end{itemize}
+
+
+\subsection{Data preparation for analysis}
+
+For the imported cleared permit data, the following detailed the process of processing, transforming and cleaning the dataset: 
+\begin{enumerate}
+    \item Installing Pycaret modules for ML analysis
+    \item Importing relevant libraries such as pandas, numpy, catboost
+    \item Importing Permit datasets from Toronto website, 2015, 2016, 2017-present, Active Permits
+    \begin{quote}
+        Note: City labels as completed in certain years, but may not be consistent with issue date.
+    \end{quote}
+    \item Setting variables for reading csv imports.
+    \item Concatenating cleared permits into one pandas dataframe.
+    \item Dropping rows with bad data: non-closed permits, non-integer values for estimated construction cost.
+    \begin{enumerate}
+        \item Formatting dataframe to only have relevant columns as mentioned in feature engineering. 
+    \end{enumerate}
+    \item Formatting estimated construction cost column: Standardized format, Dropping values less than 100 dollars.
+    \item Retrieving value counts for permit type, work, and structure type. Removing values less than threshold to have populated categories and limit the number of dummy columns generated in ML analysis. (Removal of Outliers)
+    \begin{enumerate}
+        \item Removing duplicate permit numbers. 
+    \end{enumerate}
+    \item Extracting year from permit number and checking consistency with application year. Removing values that do not match. Removing data older than 2010.
+    \item Converting dates in application date and issued date into standardized datetime formats.
+    \begin{enumerate}
+        \item Calculating process time in days by subtracting application date from issued date. 
+    \end{enumerate}
+    \item Bin creation: Initially used typical permit day bins, found to have not enough performance metrics. Then used equal sized bins, split dataset into short, medium, long by 33 and 66 percentiles. Yielded splitting thresholds of 2 weeks and 5 weeks. 
+    \item Drop original columns: Permit number, Application Date, Issued date (to be replaced by transformed columns: Process time and application year)
+    \begin{enumerate}
+        \item Creation of dummy columns from categorical columns (Permit type, Structure type, work) for ML processing.
+        \item Dropping rows with null values.
+    \end{enumerate}
+    \item Printing cleaned dataset with around 70,000 records. 
+\end{enumerate}
+\newpage
+For each project length (Short, Medium, Long):
+\begin{enumerate}
+    \item Trim the whole dataset to include only rows that have the corresponding project length (Short, Medium, Long). 
+    \item Split data into 2 bins at the 50th percentile. Assigning 0 or 1 to rows below or above the threshold value. (For Short projects, this was 8 days, Medium: 25 days, Long: 74 days.)
+    \item Printing binary value counts to check split of data. Since the data was discrete, it was difficult to bin evenly, but the resultant split somewhat evenly separated the data. 
+    \item Dropping unneeded columns such as Process time, and Project type from each of the three data subsets.
+    \item Appending the threshold binary values to the dataset to be used as the target vector in ML analysis.
+    \item Using the pycaret setup function on each subset with target as process time. 
+\end{enumerate}
+
+\subsection{Data analysis}
+\begin{enumerate}
+    \item Initially ran all subsets with compare models function. Catboost yielded good overall performance metrics (Accuracy, Precision, Recall, F1) in each subset.
+    \item Used catboost for all three sets.
+    \item Accuracy metric ranging from 58 percent to 65 percent between the three subsets. Long projects yielded highest average of accuracy, recall, precision, and F1. (64.2, 56.4, 66.4, 61.0)
+    \item Plotted confusion metrics, although little data accessible from them, simply that they tended to classify better than random. Long projects had the best delineation. Short projects had the worst.
+    \item Plotted ROC curves, long projects had the best AOC score of 0.70. 
+    \item Plotted decision trees (below are the decision variables used in order from the base of the tree to the leaf nodes): 
+    \begin{itemize}
+        \item SHORT PROJECTS
+        \begin{itemize}
+            \item PT Multiple Projects 0 or 1
+            \item ST Office 0 or 1
+            \item ST SFD - Semi-Detached 0 or 1
+            \item Application Year greater than 2015
+            \item Estimated Construction Cost greater than 185500
+            \item W Building Additions/Alterations 0 or 1
+        \end{itemize}
+        \item MEDIUM PROJECTS
+        \begin{itemize}
+            \item Application Year greater than 2017
+            \item Estimated Construction Cost greater than 831000
+            \item W Building Additions/Alteration 0 or 1
+            \item Estimated Construction Cost greater than 170237
+            \item W Fire/Security Upgrade 0 or 1
+            \item W Small Residential Projects 0 or 1
+        \end{itemize}
+        \item LONG PROJECTS
+        \begin{itemize}
+            \item Application Year greater than 2018
+            \item Estimated Construction Cost greater than 185250
+            \item ST SFD - Detached 0 or 1
+            \item PT New Building 0 or 1
+        \end{itemize}
+    \end{itemize}
+\end{enumerate}
+
+\subsection{Data prediction}
+
+\begin{enumerate}
+    \item Importing and cleaning data similar to cleared permits.
+    \item Using only "Under Review", "Application Received", "Not Started" permits.
+    \item Printing cleaned data. (Only about 250 records available).
+    \item Using each of the three models to generate predicted classes for each of the threshold days. 
+    \item Plotting the three models' predictions of the input data into a bar graph. 
+\begin{quote}
+    Note: Ideally, the medium category would have a 50/50 split, and the short and long categories would have a 17/83 and 83/17 split respectively. 
+\end{quote}
+\end{enumerate}
+
+\newpage
+\subsection{Performance Metrics}
+
+For this type of classification (Binary), comparing accuracy would typically be a good metric, as the datasets have equal splits in their class size. By simply measuring the correct predictions against all the predictions it gives an overall evaluation of the classification model (In this case, CatBoost). 
+
+\subsection{Experimental Results}
+Out of the models and three tested datasets, the accuracy value of 0.65 on the short projects dataset was the highest. However, the overall best model was from the long projects. It had a significant deviation from the random ROC curve compared to others, and a stronger gradient on the confusion matrices. Interestingly, less decision variables were used in the decision tree. Between the three models, the algorithm was able to loosely define short projects as Building Alterations/Additions, medium projects as small residential projects, and long projects as new buildings. This aligns quite well with existing perceptions of the construction industry. 
+
+Regarding the predicted results, the short projects had a slightly more populated class 1 than 0, where ideally it should have been a 17/83 split. The medium projects tended to have close to an even split, which is close to ideal. The long projects had close to a 83/17 split which is ideal. 
+
+\section{Conclusions}
+The research done within this projects has uses towards industry applications, such as informing clients of architects/designers/engineers or other stakeholders on the approximate timeline for the permit process. However, it does require more inputs to provide more accuracy as there are nuances in the quality of applied permit, city delays, holidays, market conditions, and more. Provided those, the model could be much more effective, and more detailed classes could be used rather than binary classification.
+
+\section{References}
+City of Toronto Cleared Permits Open Data:
+\begin{quote}
+    \url{https://open.toronto.ca/dataset/building-permits-cleared-permits/}
+\end{quote}
+
+
+City of Toronto Active Permits Open Data:
+\begin{quote}
+    \url{https://open.toronto.ca/dataset/building-permits-active-permits/}
+\end{quote}
+
+PyCaret Documentation:
+\begin{quote}
+    \url{https://pycaret.gitbook.io/docs/}
+\end{quote}
+
+Github Repository:
+\begin{quote}
+    \url{https://github.com/ThesanR/TorontoPermitClassification}
+\end{quote}
+
+\end{document}
